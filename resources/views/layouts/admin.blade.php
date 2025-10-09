@@ -154,11 +154,11 @@
 
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
         <ul class="navbar-nav align-items-lg-center">
-          <li class="nav-item"><a class="nav-link active" href="{{ route('cliente.dashboard') }}">CLIENTE</a></li>
-<li class="nav-item"><a class="nav-link" href="{{ route('cliente.webinars.index') }}">Webinars</a></li>
-<li class="nav-item"><a class="nav-link" href="#">Transparencia</a></li>
-<li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Panel Administración</a></li>
-
+          <li class="nav-item"><a class="nav-link active" href="{{ route('dashboard') }}">ADMIN</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('admin.webinars.index') }}">Webinars</a>
+</li>
+          <li class="nav-item"><a class="nav-link" href="#">Transparencia</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Panel Administración</a></li>
 
           @auth
           <li class="nav-item"><a class="nav-link" href="{{ route('inscripciones.mis') }}">Mis Conferencias</a></li>

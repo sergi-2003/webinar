@@ -12,18 +12,23 @@ class Webinar extends Model
     protected $table = 'webinars';
     public $timestamps = false;
 
-
     protected $fillable = [
         'titulo',
         'descripcion',
         'fecha',
         'estado',
         'video_url',
+        'password',
         'creado_por',
+        'hora_fin',
+        'privado',
+
     ];
 
-        protected $casts = [
+          protected $casts = [
         'fecha' => 'datetime',
+        'hora_fin' => 'datetime',
+        'privado' => 'boolean',
     ];
 
     public function creador()

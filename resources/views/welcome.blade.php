@@ -135,9 +135,6 @@
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item"><a class="nav-link active" href="#">Inicio</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Webinars</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Transparencia</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Contacto</a></li>
           <li class="nav-item"><a class="nav-link" href="/register">Registro</a></li>
           <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
         </ul>

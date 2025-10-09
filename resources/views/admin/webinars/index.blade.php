@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Panel de Webinars')
 
@@ -161,7 +161,7 @@
 
 <div class="dashboard-container">
     <div class="header-section">
-        <h2>🎓 Panel de Webinars</h2>
+        <h2>🎓 Panel de Webinars ADMIN</h2>
         <a href="{{ route('admin.webinars.create') }}" class="btn-primary">+ Nuevo Webinar</a>
     </div>
 
@@ -216,9 +216,10 @@
                         </span>
                     </div>
                     <div class="actions">
-                        <a href="{{ $webinar->video_url }}" target="_blank" class="btn-icon btn-view" title="Ver">
-                            <i class="bi bi-eye"></i>
-                        </a>
+                        <a href="{{ route('webinars.acceder', $webinar->id) }}" class="btn-icon btn-view" title="Ver">
+    <i class="bi bi-eye"></i>
+</a>
+
                         <a href="{{ route('admin.webinars.edit', $webinar->id) }}" class="btn-icon btn-edit" title="Editar">
                             <i class="bi bi-pencil-square"></i>
                         </a>

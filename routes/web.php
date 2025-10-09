@@ -8,7 +8,9 @@ use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\GrabacionController;
 use App\Http\Controllers\AsistenciaController;
 use App\Models\Webinar;
-
+use App\Http\Controllers\Admin\WebinarController as AdminWebinarController;
+use App\Http\Controllers\Cliente\WebinarController as ClienteWebinarController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,4 +105,29 @@ Route::middleware(['auth', 'can:acceso-admin'])
         Route::get('/webinars/{webinar}/edit', [WebinarController::class, 'edit'])->name('webinars.edit');
         Route::put('/webinars/{webinar}', [WebinarController::class, 'update'])->name('webinars.update');
         Route::delete('/webinars/{webinar}', [WebinarController::class, 'destroy'])->name('webinars.destroy');
+      
     });
+  // Acceso a webinars
+Route::get('/webinars/{id}/acceder', [WebinarController::class, 'acceder'])->name('webinars.acceder');
+Route::post('/webinars/{id}/acceder', [WebinarController::class, 'validarAcceso'])->name('webinars.validarAcceso');
+
+
+Route::middleware(['auth'])
+    ->prefix('cliente')
+    ->name('cliente.')
+    ->group(function () {
+        Route::get('/dashboard', function() {
+            return view('cliente.dashboard');
+        })->name('dashboard');
+
+        Route::get('/webinars', [ClienteWebinarController::class, 'index'])->name('webinars.index');
+        Route::get('/webinars/{id}/acceder', [ClienteWebinarController::class, 'acceder'])->name('webinars.acceder');
+        Route::post('/webinars/{id}/validar', [ClienteWebinarController::class, 'validar'])->name('webinars.validar');
+    });
+
+    
+Route::prefix('cliente/webinars')->name('cliente.webinars.')->middleware(['auth'])->group(function() {
+    Route::get('/', [ClienteWebinarController::class, 'index'])->name('index');
+    Route::get('/{id}/acceder', [ClienteWebinarController::class, 'acceder'])->name('acceder');
+    Route::post('/{id}/validar', [ClienteWebinarController::class, 'validar'])->name('validar');
+});
