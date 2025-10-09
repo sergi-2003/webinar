@@ -11,16 +11,38 @@ use Carbon\Carbon;
 class WebinarController extends Controller
 {
     /** 📋 Listar webinars */
-    public function index()
-    {
-        // 🔄 Actualiza estados automáticamente antes de mostrar
-        $this->actualizarEstadosWebinars();
+   
+  public function index(Request $request)
+{
+    $this->actualizarEstadosWebinars(); // 👈 Llama aquí la función automática
 
-        // 📅 Obtiene los webinars más recientes primero
-        $webinars = Webinar::orderBy('fecha', 'desc')->get();
+    $estado = $request->query('estado'); // proximo | en_vivo | finalizado
+    $q = $request->query('q');
 
-        return view('admin.webinars.index', compact('webinars'));
+    $now = Carbon::now();
+
+    $query = Webinar::query()->with('creador');
+
+    // 🔍 Búsqueda por título/descripcion
+    if (!empty($q)) {
+        $query->where(function($sub) use ($q) {
+            $sub->where('titulo', 'like', "%{$q}%")
+                ->orWhere('descripcion', 'like', "%{$q}%");
+        });
     }
+
+    // 🎯 Filtro por estado
+    if (!empty($estado) && in_array($estado, ['proximo', 'en_vivo', 'finalizado'])) {
+        $query->where('estado', $estado);
+    }
+
+    $webinars = $query->orderBy('fecha', 'desc')->paginate(12)->withQueryString();
+
+    return view('admin.webinars.index', compact('webinars'));
+}
+
+
+  
 
     /** ➕ Formulario de creación */
     public function create()

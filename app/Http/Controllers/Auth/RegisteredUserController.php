@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Usuario;
+use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ use Illuminate\Validation\Rules;
 class RegisteredUserController extends Controller
 {
     /**
-     * Show the registration view.
+     * Mostrar vista de registro.
      */
     public function create()
     {
@@ -22,25 +22,26 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Manejar registro de usuario.
      */
     public function store(Request $request)
     {
-   $request->validate([
-    'nombre' => ['required', 'string', 'max:255'],
-    'email' => ['required', 'string', 'email', 'max:255', 'unique:usuarios'],
-    'password' => ['required', 'confirmed', Rules\Password::defaults()],
-]);
+        $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuarios,email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
 
-$usuario = Usuario::create([
-    'nombre'   => $request->nombre,
-    'email'    => strtolower($request->email), // 👈 aquí lo bajas a minúsculas
-    'password' => Hash::make($request->password),
-    'rol'      => 'cliente',
-]);
-        event(new Registered($usuario));
+        $user = User::create([
+            'nombre'          => $request->nombre,
+            'email'           => strtolower($request->email),
+            'password'        => Hash::make($request->password),
+            'role'            => 'cliente',
+            'fecha_registro'  => now(),
+        ]);
 
-        Auth::login($usuario);
+        event(new Registered($user));
+        Auth::login($user);
 
         return redirect(RouteServiceProvider::HOME);
     }

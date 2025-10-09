@@ -2,27 +2,48 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+
 class Usuario extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
 
-    protected $table = 'usuarios'; // importante
-    protected $primaryKey = 'id';  
-    public $timestamps = true;
+    // ✅ Nombre real de la tabla
+    protected $table = 'usuarios';
 
+    // ✅ Laravel no debe intentar guardar created_at / updated_at
+    public $timestamps = false;
+
+    // ✅ Campos que pueden ser llenados
     protected $fillable = [
         'nombre',
         'email',
         'password',
-        'role', // aquí guardamos si es admin o cliente
+        'role',
+        'fecha_registro',
+        'telefono',
+        'is_admin',
     ];
 
-    // Método helper
-    public function isAdmin()
+    // ✅ Ocultar el password en serialización
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    // ✅ Tipos de datos
+    protected function casts(): array
     {
-        return $this->role === 'admin';
+        return [
+            'is_admin' => 'boolean',
+            'password' => 'hashed',
+        ];
     }
+    public function isAdmin()
+      {
+          return $this->role === 'admin';
+      }
 }

@@ -48,9 +48,9 @@
         transition: all 0.3s ease;
     }
     input:focus {
-        border-color: #6366f1;
+        border-color: rgb(7, 137, 48);
         outline: none;
-        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        box-shadow: rgb(7, 137, 48);
         transform: scale(1.02);
     }
 
@@ -60,7 +60,7 @@
     width: 100%;
     padding: 0.9rem;
     margin-top: 1rem;
-    background: linear-gradient(135deg, #9f9f9f, #6e6e6e);
+    background: rgb(7, 137, 48);
     color: #fff;
     font-weight: 700;
     text-align: center;
@@ -72,7 +72,7 @@
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #b3b3b3, #5a5a5a);
+    background: rgb(7, 137, 48);
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
 }
@@ -80,7 +80,7 @@
 .btn-primary:active {
     transform: translateY(0) scale(0.97);
     background: linear-gradient(135deg, #8c8c8c, #4a4a4a);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: rgb(7, 137, 48);
 }
 
 
@@ -89,7 +89,7 @@
         display: inline-block;
         margin-top: 1rem;
         font-size: 0.95rem;
-        color: #4f46e5;
+        color: rgb(7, 137, 48);
         text-decoration: none;
         transition: 0.3s;
     }
