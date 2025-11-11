@@ -24,17 +24,27 @@ class AuthenticatedSessionController extends Controller
      */
 public function store(LoginRequest $request): RedirectResponse
 {
-    $request->authenticate(); // ya usa Usuario
+    $request->authenticate(); // intenta autenticación
 
+    $user = Auth::user();
 
+    // 🚫 Si está inactivo, se cierra sesión inmediatamente
+    if ((int) $user->activo === 0) {
+        Auth::logout();
+
+        return back()->withErrors([
+            'email' => 'Tu cuenta se encuentra inactiva. Contacta al administrador para mayor información.',
+        ]);
+    }
+
+    // ✅ Si todo está bien, continúa con la sesión
     $request->session()->regenerate();
 
-
     // Redirige según rol
-    $user = Auth::user();
     if ($user->role === 'admin') {
         return redirect('/admin/dashboard');
     }
+
     return redirect('/dashboard');
 }
 

@@ -114,8 +114,8 @@
 
         <!-- Nombre -->
         <div class="mb-4">
-            <label for="nombre">Nombre</label>
-            <input id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus autocomplete="nombre">
+            <label for="nombre">Nombre Completo</label>
+            <input id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus autocomplete="nombre" placeholder="Nombre y Apellido">
             @error('nombre')
                 <p class="error">{{ $message }}</p>
             @enderror

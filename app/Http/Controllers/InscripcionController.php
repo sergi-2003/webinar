@@ -1,100 +1,59 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Inscripcion;
 use App\Models\Webinar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InscripcionController extends Controller
 {
-    public function __construct()
+
+    public function index() {
+    $inscripciones = Inscripcion::with('webinar')
+        ->where('usuario_id', auth()->id())
+        ->get();
+    return view('cliente.mis-conferencias', compact('inscripciones'));
+}
+
+
+    // Inscribir usuario al webinar
+    public function store($webinarId)
     {
-        $this->middleware('auth');
-    }
+        $usuarioId = Auth::id();
 
-    /**
-     * Store: inscribir usuario autenticado en un webinar (cliente).
-     */
-    public function store(Webinar $webinar, Request $request)
-    {
-        $userId = Auth::id();
-
-        // Prevención de duplicados
-        $exists = Inscripcion::where('usuario_id', $userId)
-            ->where('webinar_id', $webinar->id)
-            ->exists();
-
-        if ($exists) {
-            return back()->withErrors(['Ya estás inscrito en este webinar.']);
+        if (Inscripcion::where('usuario_id', $usuarioId)->where('webinar_id', $webinarId)->exists()) {
+            return back()->with('warning', '⚠️ Ya estás inscrito en este webinar.');
         }
 
         Inscripcion::create([
-            'usuario_id' => $userId,
-            'webinar_id' => $webinar->id,
+            'usuario_id' => $usuarioId,
+            'webinar_id' => $webinarId,
+            'fecha_inscripcion' => now(),
         ]);
 
-        return back()->with('success', 'Inscripción completada.');
+        return back()->with('success', '✅ Te has inscrito correctamente.');
     }
 
-    /**
-     * Listar inscripciones del usuario (cliente).
-     */
-    public function index()
+    // Ver mis inscripciones
+    public function misConferencias()
     {
-        $userId = Auth::id();
-        $inscripciones = Inscripcion::where('usuario_id', $userId)
+        $inscripciones = Inscripcion::where('usuario_id', Auth::id())
             ->with('webinar')
-            ->orderByDesc('fecha_inscripcion')
+            ->orderBy('fecha_inscripcion', 'desc')
             ->get();
 
-        return view('inscripciones.index', compact('inscripciones'));
+        return view('cliente.webinars.mis_conferencias', compact('inscripciones'));
     }
 
-    /**
-     * Para el admin: listar inscripciones de un webinar.
-     */
-    public function adminIndex(Webinar $webinar)
-    {
-        $inscripciones = Inscripcion::where('webinar_id', $webinar->id)
-            ->with('usuario') // requiere relación en el modelo Inscripcion
-            ->get();
-
-        return view('admin.inscripciones.index', compact('webinar', 'inscripciones'));
+    // Cancelar inscripción
+    public function destroy($id) {
+    $inscripcion = Inscripcion::findOrFail($id);
+    if ($inscripcion->usuario_id === auth()->id()) {
+        $inscripcion->delete();
+        return back()->with('success', 'Inscripción cancelada correctamente.');
     }
+    abort(403);
+}
 
-    /**
-     * Exportar inscripciones a CSV (admin).
-     */
-    public function export(Webinar $webinar)
-    {
-        $inscripciones = Inscripcion::where('webinar_id', $webinar->id)
-            ->with('usuario')
-            ->get();
-
-        $response = new StreamedResponse(function () use ($inscripciones) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['usuario_id', 'nombre', 'email', 'fecha_inscripcion']);
-
-            foreach ($inscripciones as $ins) {
-                $usuario = $ins->usuario ?? null;
-                fputcsv($handle, [
-                    $ins->usuario_id,
-                    $usuario ? $usuario->nombre : '',
-                    $usuario ? $usuario->email : '',
-                    $ins->fecha_inscripcion,
-                ]);
-            }
-
-            fclose($handle);
-        });
-
-        $filename = 'inscripciones_webinar_'.$webinar->id.'.csv';
-        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
-        $response->headers->set('Content-Disposition', "attachment; filename=\"$filename\"");
-
-        return $response;
-    }
 }

@@ -37,4 +37,18 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
     }
+
+
+protected function authenticated($request, $user)
+{
+    if ((int) $user->activo === 0) {
+        \Auth::logout();
+        return redirect()->route('login')->withErrors([
+            'email' => 'Tu cuenta está inactiva. Contacta al administrador.',
+        ]);
+    }
+
+    return redirect()->intended($this->redirectPath());
+}
+
 }

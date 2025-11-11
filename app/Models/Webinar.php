@@ -11,6 +11,8 @@ class Webinar extends Model
 
     protected $table = 'webinars';
     public $timestamps = false;
+    
+    
 
     protected $fillable = [
         'titulo',
@@ -20,6 +22,7 @@ class Webinar extends Model
         'video_url',
         'password',
         'creado_por',
+        'hora_inicio',
         'hora_fin',
         'privado',
 
@@ -35,5 +38,18 @@ class Webinar extends Model
 {
     return $this->belongsTo(User::class, 'creado_por');
 }
+
+
+public function inscripciones()
+{
+    return $this->hasMany(\App\Models\Inscripcion::class, 'webinar_id');
+}
+
+public function participantes()
+{
+    return $this->hasMany(RegistroWebinarParticipante::class, 'webinar_id');
+}
+
+
 
 }

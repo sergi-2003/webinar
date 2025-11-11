@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
+use App\Notifications\ResetPasswordNotification;
 
 class Usuario extends Authenticatable
 {
@@ -23,6 +23,7 @@ class Usuario extends Authenticatable
         'email',
         'password',
         'role',
+        'activo',
         'fecha_registro',
         'telefono',
         'is_admin',
@@ -34,16 +35,45 @@ class Usuario extends Authenticatable
         'remember_token',
     ];
 
-    // ✅ Tipos de datos
-    protected function casts(): array
-    {
-        return [
-            'is_admin' => 'boolean',
-            'password' => 'hashed',
-        ];
-    }
+  
     public function isAdmin()
       {
           return $this->role === 'admin';
       }
+
+      
+
+      public function inscripciones()
+{
+    return $this->hasMany(\App\Models\Inscripcion::class, 'usuario_id');
+}
+
+public function scopeActivos($query)
+{
+    return $query->where('activo', true);
+}
+protected $casts = [
+    'is_admin' => 'boolean',
+    'password' => 'hashed',
+    'activo' => 'boolean',
+];
+
+
+
+public function sendPasswordResetNotification($token)
+{
+    $this->notify(new ResetPasswordNotification($token));
+}
+
+protected static function boot()
+{
+    parent::boot();
+
+    static::creating(function ($usuario) {
+        if (empty($usuario->fecha_registro)) {
+            $usuario->fecha_registro = now();
+        }
+    });
+}
+
 }

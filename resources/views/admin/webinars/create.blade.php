@@ -34,6 +34,8 @@
 
     input[type="text"],
     input[type="datetime-local"],
+    input[type="url"],
+    input[type="number"],
     textarea,
     select {
         width: 100%;
@@ -53,9 +55,7 @@
         box-shadow: 0 0 0 3px rgba(14,165,163,0.15);
     }
 
-    textarea {
-        resize: vertical;
-    }
+    textarea { resize: vertical; }
 
     .form-switch {
         display: flex;
@@ -76,10 +76,7 @@
         transition: background 0.3s;
     }
 
-    .form-switch input:checked {
-        background: #0ea5a3;
-    }
-
+    .form-switch input:checked { background: #0ea5a3; }
     .form-switch input::before {
         content: '';
         position: absolute;
@@ -91,20 +88,7 @@
         background: #fff;
         transition: 0.3s;
     }
-
-    .form-switch input:checked::before {
-        transform: translateX(20px);
-    }
-
-    .password-field {
-        display: none;
-        animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .form-switch input:checked::before { transform: translateX(20px); }
 
     .btn-primary {
         background: linear-gradient(135deg, #0ea5a3, #3b82f6);
@@ -117,12 +101,10 @@
         width: 100%;
         margin-top: 10px;
     }
-
     .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(14,165,163,0.35);
     }
-
     .btn-secondary {
         background: #e2e8f0;
         border: none;
@@ -134,10 +116,7 @@
         width: 100%;
         margin-top: 8px;
     }
-
-    .btn-secondary:hover {
-        background: #cbd5e1;
-    }
+    .btn-secondary:hover { background: #cbd5e1; }
 
     .alert-danger {
         background: #fee2e2;
@@ -146,7 +125,6 @@
         padding: 12px;
         margin-bottom: 20px;
     }
-
 </style>
 
 <div class="form-container">
@@ -166,44 +144,81 @@
         @csrf
 
         <div class="mb-3">
-            <label>Título</label>
-            <input type="text" name="titulo" class="form-control" value="{{ old('titulo') }}" required>
+            <label for="titulo">Título</label>
+            <input type="text" id="titulo" name="titulo"
+                   class="form-control @error('titulo') is-invalid @enderror"
+                   value="{{ old('titulo') }}" required>
+            @error('titulo')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
-            <label>Descripción</label>
-            <textarea name="descripcion" class="form-control" rows="4" required>{{ old('descripcion') }}</textarea>
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" name="descripcion"
+                      class="form-control @error('descripcion') is-invalid @enderror"
+                      rows="4" required>{{ old('descripcion') }}</textarea>
+            @error('descripcion')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
-            <label>Fecha</label>
-            <input type="datetime-local" name="fecha" class="form-control" value="{{ old('fecha') }}" required>
+            <label for="fecha">Fecha y hora del webinar</label>
+            <input type="datetime-local" id="fecha" name="fecha"
+                   class="form-control @error('fecha') is-invalid @enderror"
+                   value="{{ old('fecha') }}" required>
+            @error('fecha')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
-            <label>Estado</label>
-            <select name="estado" class="form-select" required>
+            <label for="duracion">Duración (minutos)</label>
+            <input type="number" id="duracion" name="duracion"
+                   class="form-control @error('duracion') is-invalid @enderror"
+                   value="{{ old('duracion', 60) }}" min="1" required>
+            @error('duracion')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="mb-3">
+            <label for="estado">Estado</label>
+            <select id="estado" name="estado" class="form-select">
+                <option value="">Automático</option>
                 <option value="proximo">Próximo</option>
                 <option value="en_vivo">En vivo</option>
                 <option value="finalizado">Finalizado</option>
             </select>
         </div>
+        
+                <div class="mb-3">
+                    <label for="video_url" class="form-label fw-semibold">Enlace de la reunión (Meet, Zoom, Teams, etc.)</label>
+                    <input type="url" id="video_url" name="video_url"
+                           class="form-control @error('video_url') is-invalid @enderror"
+                           placeholder="https://enlace.com/xxxx-xxxx-xxx"
+                           value="{{ old('video_url') }}" require>
+                    <small class="text-muted">Pega aquí el enlace generado desde tu plataforma de videollamada.</small>
+                    @error('video_url')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
 
-        <!-- ✅ Switch para marcar como privado -->
         <div class="form-switch">
-            <input type="checkbox" id="privadoSwitch">
+            <input type="checkbox" id="privadoSwitch" name="privado" value="1" {{ old('privado') ? 'checked' : '' }}>
             <label for="privadoSwitch">Webinar privado</label>
         </div>
 
-      <div class="mb-3">
-    <label class="form-label">Contraseña (opcional)</label>
-    <input type="text" name="password" class="form-control" value="{{ old('password') }}">
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Duración (minutos)</label>
-    <input type="number" name="duracion" class="form-control" value="{{ old('duracion', 60) }}" min="1">
-</div>
+        <div class="mb-3" id="passwordField">
+            <label for="password" class="form-label">Contraseña (solo si es privado)</label>
+            <input type="text" id="password" name="password"
+                   class="form-control @error('password') is-invalid @enderror"
+                   value="{{ old('password') }}">
+            @error('password')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
 
         <button type="submit" class="btn-primary">💾 Crear Webinar</button>
         <a href="{{ route('admin.webinars.index') }}" class="btn-secondary text-center d-block mt-3">↩ Volver</a>
@@ -211,10 +226,14 @@
 </div>
 
 <script>
-    // Mostrar/ocultar campo de contraseña según el switch
-    document.getElementById('privadoSwitch').addEventListener('change', function() {
-        const passwordField = document.getElementById('passwordField');
-        passwordField.style.display = this.checked ? 'block' : 'none';
-    });
+    const privadoSwitch = document.getElementById('privadoSwitch');
+    const passwordField = document.getElementById('passwordField');
+
+    function togglePassword() {
+        passwordField.style.display = privadoSwitch.checked ? 'block' : 'none';
+    }
+
+    privadoSwitch.addEventListener('change', togglePassword);
+    togglePassword();
 </script>
 @endsection

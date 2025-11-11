@@ -10,6 +10,8 @@
     <div class="row g-4">
         @foreach ($webinars as $webinar)
             @php
+                use Carbon\Carbon;
+
                 $estado = strtolower($webinar->estado ?? 'proximo');
                 $estadoColor = match($estado) {
                     'en_vivo' => 'bg-danger text-white',
@@ -23,6 +25,9 @@
                     'finalizado' => 'bi-check-circle',
                     default => 'bi-circle'
                 };
+
+                $ahora = Carbon::now();
+                $fechaWebinar = Carbon::parse($webinar->fecha);
             @endphp
 
             <div class="col-12 col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
@@ -40,27 +45,50 @@
                         <h5 class="fw-bold text-dark mb-2">{{ $webinar->titulo }}</h5>
                         <p class="text-muted small mb-3">
                             <i class="bi bi-calendar-event me-1"></i>
-                            {{ \Carbon\Carbon::parse($webinar->fecha)->format('d/m/Y H:i') }}
+                            {{ $fechaWebinar->format('d/m/Y H:i') }}
                         </p>
                         <p class="text-secondary flex-grow-1">{{ Str::limit($webinar->descripcion, 100) }}</p>
 
-                        @if ($webinar->password)
-                            <a href="{{ route('cliente.webinars.acceder', $webinar->id) }}" 
-                               class="btn btn-outline-warning rounded-pill fw-semibold mt-3 shadow-sm w-100">
-                                <i class="bi bi-lock-fill me-1"></i> Acceder (Privado)
-                            </a>
-                        @else
-                            <a href="{{ $webinar->video_url }}" target="_blank" 
-                               class="btn btn-success rounded-pill fw-semibold mt-3 shadow-sm w-100">
-                                <i class="bi bi-play-circle me-1"></i> Ver Webinar
-                            </a>
+                        {{-- CONTADOR REGRESIVO --}}
+                        @if ($ahora->lessThan($fechaWebinar))
+                            <div class="countdown text-center mb-2 fw-semibold text-success"
+                                 data-fecha="{{ $fechaWebinar }}">
+                                Empieza en: <span class="time"></span>
+                            </div>
                         @endif
+
+                        {{-- BOTÓN DE ACCESO --}}
+                        @if ($ahora->greaterThanOrEqualTo($fechaWebinar))
+                            @if ($webinar->password)
+                                <a href="{{ route('cliente.webinars.acceder', $webinar->id) }}" 
+                                   class="btn btn-warning rounded-pill fw-semibold mt-3 shadow-sm w-100">
+                                    <i class="bi bi-lock-fill me-1"></i> Acceder (Privado)
+                                </a>
+                            @else
+                                <a href="{{ $webinar->video_url }}" target="_blank" 
+                                   class="btn btn-success rounded-pill fw-semibold mt-3 shadow-sm w-100">
+                                    <i class="bi bi-play-circle me-1"></i> Ver Webinar
+                                </a>
+                            @endif
+                        @else
+                            <button class="btn btn-secondary rounded-pill fw-semibold mt-3 shadow-sm w-100" disabled>
+                                <i class="bi bi-clock-history me-1"></i> Disponible el {{ $fechaWebinar->format('d/m/Y H:i') }}
+                            </button>
+                        @endif
+
+                        {{-- BOTÓN DE INSCRIPCIÓN --}}
+                        <form method="POST" action="{{ route('cliente.webinars.inscribir', $webinar->id) }}" class="mt-2">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-success rounded-pill fw-semibold w-100">
+                                <i class="bi bi-person-plus me-1"></i> Inscribirme
+                            </button>
+                        </form>
                     </div>
 
                     <div class="card-footer bg-white border-0 text-center py-3">
                         <small class="text-muted">
                             <i class="bi bi-person-circle me-1"></i>
-                           Creador:  {{ $webinar->creador->nombre ?? 'Administrador' }}
+                            Creador: {{ $webinar->creador->nombre ?? 'Administrador' }}
                         </small>
                     </div>
                 </div>
@@ -71,19 +99,15 @@
 
 <!-- ======== ESTILOS ======== -->
 <style>
-/* === TARJETAS === */
 .webinar-card {
     border-radius: 1.2rem;
     background: #ffffff;
     transition: all 0.35s ease;
-    overflow: hidden;
 }
 .webinar-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 12px 30px rgba(0,0,0,0.12);
 }
-
-/* === HEADER DE TARJETA === */
 .webinar-header {
     height: 120px;
     background: linear-gradient(135deg, #198754, #20c997);
@@ -115,8 +139,6 @@
     font-weight: 600;
     z-index: 2;
 }
-
-/* === ESTADO VACÍO === */
 .empty-state {
     text-align: center;
 }
@@ -133,8 +155,6 @@
 .empty-state p {
     color: #6c757d;
 }
-
-/* === FOOTER FIJO === */
 footer {
     position: fixed;
     bottom: 0;
@@ -155,17 +175,53 @@ footer a {
 footer a:hover {
     text-decoration: none;
 }
-
-/* === ANIMACIÓN AOS === */
 [data-aos] {
     transition: transform 0.6s ease, opacity 0.6s ease;
 }
+.countdown {
+    font-size: 0.9rem;
+    color: #198754;
+}
 </style>
 
-<!-- FOOTER -->
+<!-- ======== SCRIPT DE CUENTA REGRESIVA ======== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const countdowns = document.querySelectorAll('.countdown');
+
+    countdowns.forEach(el => {
+        const fechaObjetivo = new Date(el.dataset.fecha);
+        const timeEl = el.querySelector('.time');
+
+        const interval = setInterval(() => {
+            const ahora = new Date();
+            const diferencia = fechaObjetivo - ahora;
+
+            if (diferencia <= 0) {
+                clearInterval(interval);
+                el.textContent = "¡El webinar ya está disponible!";
+                return;
+            }
+
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            timeEl.textContent = 
+                (dias > 0 ? dias + "d " : "") +
+                String(horas).padStart(2, '0') + ":" +
+                String(minutos).padStart(2, '0') + ":" +
+                String(segundos).padStart(2, '0');
+        }, 1000);
+    });
+});
+</script>
+
+<!-- ======== FOOTER ======== -->
 <footer>
-    © {{ date('Y') }} Portal Institucional — 
-    <a href="#">Términos</a> | 
-    <a href="#">Privacidad</a> | 
+    © {{ date('Y') }} Portal Institucional —
+    <a href="#">Términos</a> |
+    <a href="#">Privacidad</a> |
     <a href="#">Contacto</a>
 </footer>

@@ -1,26 +1,39 @@
 <?php
 
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Webinar;
+use App\Models\User;
+use App\Models\Inscripcion;
+use App\Models\RegistroWebinarParticipante;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Exports\WebinarsExport;         
+use Maatwebsite\Excel\Facades\Excel;    
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class WebinarController extends Controller
 {
-    /** 📋 Listar webinars */
+    /** Mostrar el formulario de creación de un nuevo webinar */
+    public function create()
+    {
+        return view('admin.webinars.create');
+    }
+
+    /** Listar todos los webinars en el panel del administrador */
     public function index(Request $request)
     {
-        $this->actualizarEstadosWebinars(); // 👈 Actualiza estados automáticamente
+        // Actualizamos estados antes de listar (puedes quitar esto y ejecutarlo por cron si prefieres)
+        $this->actualizarEstadosWebinars();
 
-        $estado = $request->query('estado'); // proximo | en_vivo | finalizado
+        $estado = $request->query('estado');
         $q = $request->query('q');
 
         $query = Webinar::query()->with('creador');
 
-        // 🔍 Búsqueda
         if (!empty($q)) {
             $query->where(function ($sub) use ($q) {
                 $sub->where('titulo', 'like', "%{$q}%")
@@ -28,158 +41,324 @@ class WebinarController extends Controller
             });
         }
 
-        // 🎯 Filtro por estado
         if (!empty($estado) && in_array($estado, ['proximo', 'en_vivo', 'finalizado'])) {
             $query->where('estado', $estado);
         }
 
-        $webinars = $query->orderBy('fecha', 'desc')->paginate(12)->withQueryString();
+        // Ordenar por la hora de inicio para que la lista sea cronológica
+        $webinars = $query->orderBy('hora_inicio', 'desc')->paginate(12)->withQueryString();
 
-        return view('admin.webinars.index', compact('webinars'));
+        // Estadísticas generales
+        $totalWebinars = Webinar::count();
+        $activeWebinars = Webinar::where('estado', 'en_vivo')->count();
+        $inactiveWebinars = Webinar::where('estado', 'finalizado')->count();
+        $proximosWebinars = Webinar::where('estado', 'proximo')->count();
+        $totalUsers = User::count();
+        $totalInscripciones = Inscripcion::count() ?? 0;
+        $promedioAsistentes = $totalWebinars > 0 ? $totalInscripciones / $totalWebinars : 0;
+
+        // Datos para gráficas (usamos la columna fecha)
+        $labels = Webinar::selectRaw('MONTH(fecha) as mes')
+            ->groupBy('mes')
+            ->pluck('mes')
+            ->map(fn($m) => Carbon::create()->month($m)->format('M'));
+
+        $data = Webinar::selectRaw('COUNT(*) as total, MONTH(fecha) as mes')
+            ->groupBy('mes')
+            ->pluck('total');
+
+        $ultimosWebinars = Webinar::orderBy('hora_inicio', 'desc')->take(5)->get();
+        $ultimosUsuarios = User::orderBy('id', 'desc')->take(5)->get();
+
+        return view('admin.webinars.index', compact(
+            'webinars',
+            'totalWebinars',
+            'activeWebinars',
+            'inactiveWebinars',
+            'proximosWebinars',
+            'totalUsers',
+            'totalInscripciones',
+            'promedioAsistentes',
+            'labels',
+            'data',
+            'ultimosWebinars',
+            'ultimosUsuarios'
+        ));
     }
 
-    /** ➕ Formulario de creación */
-    public function create()
-    {
-        return view('admin.webinars.create');
-    }
-
-    /** 💾 Guardar nuevo webinar */
-   public function store(Request $request)
+    /** Guardar un nuevo webinar */
+public function store(Request $request)
 {
     $request->validate([
         'titulo' => 'required|string|max:255',
         'descripcion' => 'required|string',
         'fecha' => 'required|date',
-        'estado' => 'required|in:proximo,en_vivo,finalizado',
+        'duracion' => 'required|integer|min:1',
+        'estado' => 'nullable|in:proximo,en_vivo,finalizado',
         'password' => 'nullable|string|max:50',
-        'duracion' => 'nullable|integer|min:1'
+        'video_url' => 'nullable|url',
     ]);
 
-    $slug = str_replace(' ', '_', $request->titulo);
-    $uniqueId = uniqid();
-    $videoUrl = "https://meet.jit.si/{$slug}_{$uniqueId}";
+    $horaInicio = Carbon::parse($request->fecha);
+    $duracion = (int) $request->duracion;
+    $horaFin = $horaInicio->copy()->addMinutes($duracion);
 
-    $fechaInicio = Carbon::parse($request->fecha);
-    $horaFin = $fechaInicio->copy()->addMinutes((int) $request->input('duracion', 60));
+    // Determinar el estado automáticamente si no se envía
+    $estado = $request->input('estado') ?? $this->calcularEstadoPara($horaInicio, $horaFin);
 
+    // Linnk del meet
+   $videoUrl = $request->input('video_url');
+
+    // Crear el webinar en la base de datos
     Webinar::create([
         'titulo' => $request->titulo,
         'descripcion' => $request->descripcion,
-        'fecha' => $fechaInicio,
+        'fecha' => $horaInicio->format('Y-m-d H:i:s'),
+        'hora_inicio' => $horaInicio,
         'hora_fin' => $horaFin,
-        'estado' => $request->estado,
+        'duracion' => $duracion,
+        'estado' => $estado,
         'video_url' => $videoUrl,
         'creado_por' => Auth::id(),
-        'password' => $request->password,
-        'privado' => !empty($request->password),
+        'privado' => $request->has('privado') ? 1 : 0,
+        'password' => $request->has('privado') ? $request->password : null,
+        'activo' => false,
     ]);
 
     return redirect()->route('admin.webinars.index')
-        ->with('success', '✅ Webinar creado correctamente.');
+        ->with('success', 'Webinar creado correctamente. El enlace de la reunion se activará cuando el anfitrión entre.');
 }
 
-    /** ✏️ Formulario de edición */
-    public function edit($id)
-    {
-        $webinar = Webinar::findOrFail($id);
-        return view('admin.webinars.edit', compact('webinar'));
-    }
 
-    /** 🔄 Actualizar webinar existente */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'titulo' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            'fecha' => 'required|date',
-            'estado' => 'required|in:proximo,en_vivo,finalizado',
-            'video_url' => 'nullable|url',
-            'password' => 'nullable|string|max:50',
-            'duracion' => 'nullable|integer|min:1'
-        ]);
+    /** Actualizar un webinar existente */
+   public function update(Request $request, $id)
+{
+    $request->validate([
+        'titulo' => 'required|string|max:255',
+        'descripcion' => 'required|string',
+        'hora_inicio' => 'required|date', 
+        'duracion' => 'required|integer|min:1',
+        'estado' => 'nullable|in:proximo,en_vivo,finalizado',
+        'video_url' => 'nullable|url',
+        'password' => 'nullable|string|max:50',
+    ]);
 
-        $webinar = Webinar::findOrFail($id);
+    $webinar = Webinar::findOrFail($id);
 
-        // 🕒 Recalcular hora_fin si hay nueva duración
-        $horaFin = Carbon::parse($request->fecha)->addMinutes($request->input('duracion', 60));
+    // 🕒 Calcular horas
+    $horaInicio = Carbon::parse($request->hora_inicio)->seconds(0);
+    $duracion = (int) $request->duracion;
+    $horaFin = $horaInicio->copy()->addMinutes($duracion);
 
-        // Mantener URL actual o usar la nueva
-        $videoUrl = $request->video_url ?: $webinar->video_url;
+    // 📅 Determinar estado automático (si no lo elige el admin)
+    $estado = $request->input('estado') ?? $this->calcularEstadoPara($horaInicio, $horaFin);
 
-        // Si hay contraseña, agregamos fragmento y marcamos privado
-        $isPrivado = $request->filled('password');
-        if ($isPrivado) {
-            $videoUrl = preg_replace('/#.*$/', '', $videoUrl); // limpia fragmento anterior
-            $videoUrl .= "#config.password=" . urlencode($request->password);
-        }
+    // 🔒 Si el admin deja la contraseña vacía, se conserva la anterior
+    $password = $request->filled('password') ? $request->password : $webinar->password;
 
-        $webinar->update([
-            'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'fecha' => $request->fecha,
-            'hora_fin' => $horaFin,
-            'estado' => $request->estado,
-            'video_url' => $videoUrl,
-            'password' => $request->password,
-            'privado' => $isPrivado,
-        ]);
+       // 🔐 Mantener privacidad anterior si no se envía el checkbox
+     $privado = $request->has('privado') ? 1 : $webinar->privado;
 
-        return redirect()
-            ->route('admin.webinars.index')
-            ->with('success', '✅ Webinar actualizado correctamente.');
-    }
+    $webinar->update([
+        'titulo' => $request->titulo,
+        'descripcion' => $request->descripcion,
+        'fecha' => $horaInicio->format('Y-m-d H:i:s'),
+        'hora_inicio' => $horaInicio,
+        'hora_fin' => $horaFin,
+        'duracion' => $duracion,
+        'estado' => $estado,
+        'video_url' => $request->video_url ?: $webinar->video_url,
+        'password' => $password,
+         'privado' => $privado,
 
-    /** 🗑️ Eliminar webinar */
+    ]);
+
+    return redirect()->route('admin.webinars.index')
+        ->with('success', '✅ Webinar actualizado correctamente.');
+}
+
+
+/** Mostrar formulario de edición de un webinar existente */
+public function edit($id)
+{
+    $webinar = Webinar::findOrFail($id);
+    return view('admin.webinars.edit', compact('webinar'));
+}
+
+
+    /** Eliminar un webinar */
     public function destroy(Webinar $webinar)
     {
         $webinar->delete();
 
         return redirect()
             ->route('admin.webinars.index')
-            ->with('success', '🗑️ Webinar eliminado correctamente.');
+            ->with('success', 'Webinar eliminado correctamente.');
     }
 
-    /**
-     * 🧠 Función privada: Actualiza automáticamente los estados.
-     */
+public function inscribirse($id)
+{
+    if (!Auth::check()) {
+        return redirect()->route('login')->with('error', 'Debes iniciar sesión para inscribirte.');
+    }
+
+    $usuario = Auth::user();
+    $webinar = Webinar::find($id);
+
+    if (!$webinar) {
+        return redirect()->back()->with('error', 'El webinar no existe o fue eliminado.');
+    }
+
+    // 🚫 Evitar duplicados
+    $yaInscrito = Inscripcion::where('usuario_id', $usuario->id)
+        ->where('webinar_id', $webinar->id)
+        ->exists();
+
+    if ($yaInscrito) {
+        return redirect()->back()->with('error', '❌ Ya estás inscrito en este webinar.');
+    }
+
+    // ✅ Registrar inscripción
+    Inscripcion::create([
+        'usuario_id' => $usuario->id,
+        'webinar_id' => $webinar->id,
+        'fecha_inscripcion' => now(),
+    ]);
+
+    // ✅ Registrar participante en tabla registro_webinar_participante
+    RegistroWebinarParticipante::create([
+        'usuario_id' => $usuario->id,
+        'webinar_id' => $webinar->id,
+        'nombre' => $usuario->nombre,
+        'apellido' => $usuario->apellido,
+        'documento_identidad' => $usuario->documento_identidad,
+        'sexo' => $usuario->sexo,
+        'edad' => $usuario->edad, 
+        'barrio' => $usuario->barrio, 
+        'comuna' => $usuario->comuna,
+        'grupo_poblacional' => $usuario->grupo_poblacional,
+        'etnia' => $usuario->etnia,
+    ]);
+
+    return redirect()->back()->with('success', '✅ Te has inscrito correctamente al webinar.');
+}
+
+
+    /** Actualiza automáticamente los estados de los webinars según hora_inicio y hora_fin */
     private function actualizarEstadosWebinars()
     {
-        $ahora = Carbon::now();
+        $ahora = Carbon::now()->seconds(0);
 
-        Webinar::where('fecha', '>', $ahora)
-            ->update(['estado' => 'proximo']);
+        // Usamos chunk para no cargar todo en memoria
+        Webinar::query()->chunk(200, function ($webinars) use ($ahora) {
+            foreach ($webinars as $webinar) {
+                // proteger contra nulls
+                if (empty($webinar->hora_inicio) || empty($webinar->hora_fin)) {
+                    continue;
+                }
 
-        Webinar::where('fecha', '<=', $ahora)
-            ->where('fecha', '>=', $ahora->copy()->subHour())
-            ->update(['estado' => 'en_vivo']);
+                try {
+                    $inicio = Carbon::parse($webinar->hora_inicio)->seconds(0);
+                    $fin = Carbon::parse($webinar->hora_fin)->seconds(0);
+                } catch (\Exception $e) {
+                    // si hay formato raro, lo saltamos
+                    continue;
+                }
 
-        Webinar::where('fecha', '<', $ahora->copy()->subHour())
-            ->update(['estado' => 'finalizado']);
+                if ($ahora->lt($inicio)) {
+                    $nuevoEstado = 'proximo';
+                } elseif ($ahora->between($inicio, $fin)) {
+                    $nuevoEstado = 'en_vivo';
+                } else {
+                    $nuevoEstado = 'finalizado';
+                }
+
+                if ($webinar->estado !== $nuevoEstado) {
+                    $webinar->update(['estado' => $nuevoEstado]);
+                }
+            }
+        });
     }
 
-    /** 🔒 Acceso a webinar privado */
-    public function acceder($id)
+    /** Helper para calcular estado por hora_inicio/hora_fin sin tocar BD */
+    private function calcularEstadoPara(Carbon $inicio, Carbon $fin): string
     {
-        $webinar = Webinar::findOrFail($id);
+        $ahora = Carbon::now()->seconds(0);
 
-        if (!$webinar->privado) {
-            return redirect()->away($webinar->video_url);
+        if ($ahora->lt($inicio)) {
+            return 'proximo';
+        } elseif ($ahora->between($inicio, $fin)) {
+            return 'en_vivo';
+        } else {
+            return 'finalizado';
         }
-
-        return view('cliente.webinars.acceder', compact('webinar'));
     }
 
-    /** ✅ Validar contraseña de acceso */
-    public function validarAcceso(Request $request, $id)
+
+
+public function acceder($id)
 {
     $webinar = Webinar::findOrFail($id);
 
-    if ($webinar->password && $webinar->password === $request->input('password')) {
-        // ✅ En lugar de mostrar el link con la contraseña, lo llevamos a una vista segura
-        return view('cliente.webinars.ver', compact('webinar'));
+    // Traemos directamente los participantes del registro
+    $participantes = RegistroWebinarParticipante::where('webinar_id', $webinar->id)
+        ->select('nombre', 'apellido', 'documento_identidad', 'grupo_poblacional', 'etnia', 'sexo', 'created_at')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    // Si es administrador, activa el webinar
+    if (auth()->user()->isAdmin('admin')) {
+        $webinar->activo = true;
+        $webinar->save();
+
+        return view('admin.webinars.ver', compact('webinar', 'participantes'))
+            ->with('success', 'Has activado la reunión. Los usuarios ya pueden ingresar.');
     }
 
-    return back()->withErrors(['password' => '❌ Contraseña incorrecta.'])->withInput();
+    // Si no es admin, solo puede ver los detalles
+    return view('admin.webinars.ver', compact('webinar', 'participantes'));
 }
+
+
+    /** Ver inscritos */
+    public function verInscritos($id)
+    {
+        $webinar = Webinar::with(['inscripciones.usuario'])->findOrFail($id);
+        return view('admin.webinars.inscritos', compact('webinar'));
+    }
+
+    public function mis()
+    {
+        $webinars = Webinar::where('creado_por', auth()->id())->get();
+        return view('admin.webinars.mis', compact('webinars'));
+    }
+
+    public function toggleActivo($id)
+{
+    $webinar = Webinar::findOrFail($id);
+    $webinar->activo = !$webinar->activo;
+    $webinar->save();
+
+    $mensaje = $webinar->activo 
+        ? '✅ El webinar se ha activado correctamente. Los usuarios ya pueden ingresar.' 
+        : '⛔ El webinar se ha inactivado. Los usuarios ya no podrán ingresar.';
+
+    return redirect()->route('admin.webinars.index')->with('success', $mensaje);
+}
+
+public function mural()
+{
+    $webinars = Webinar::where('estado', 'finalizado')
+        ->latest('fecha')
+        ->get();
+
+    return view('cliente.mural', compact('webinars'));
+}
+public function exportarExcel()
+{
+    // Excel::download(<clase exportadora>, <nombre del archivo>)
+    return Excel::download(new WebinarsExport, 'reporte_webinars.xlsx');
+}
+
+
 }

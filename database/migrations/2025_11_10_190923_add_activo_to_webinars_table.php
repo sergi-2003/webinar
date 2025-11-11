@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    
- public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
 {
     Schema::table('webinars', function (Blueprint $table) {
-        $table->boolean('privado')->default(false);
+        $table->boolean('activo')->default(true)->after('privado');
     });
 }
 
-public function down()
+public function down(): void
 {
     Schema::table('webinars', function (Blueprint $table) {
-        $table->dropColumn('privado');
+        $table->dropColumn('activo');
     });
 }
 

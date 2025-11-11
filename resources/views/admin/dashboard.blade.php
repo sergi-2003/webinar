@@ -1,271 +1,281 @@
 @extends('layouts.admin')
 
-@section('title', 'Panel de Administración')
+@section('title', 'Dashboard de Métricas')
 
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
 <style>
+    /* === ESTILOS GENERALES === */
     body {
-        background: #f8fafc;
-        font-family: 'Inter', sans-serif;
+        background-color: #f8fafc;
     }
 
-    .dashboard-container {
-        padding: 40px 30px;
-        min-height: 100vh;
+    .dashboard-header {
+        background: linear-gradient(90deg, #37b24d, #2f9e44);
+        color: white;
+        border-radius: 1rem;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 20px rgba(55, 178, 77, 0.3);
     }
 
-    .tab-buttons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 25px;
-        border-bottom: 2px solid #e2e8f0;
+    .dashboard-header h2 {
+        font-weight: 700;
     }
 
-    .tab-btn {
-        background: none;
+    /* === TARJETAS === */
+    .metric-card {
         border: none;
-        font-size: 1rem;
-        font-weight: 600;
-        padding: 12px 18px;
-        color: #64748b;
-        cursor: pointer;
-        transition: 0.2s;
-        border-bottom: 3px solid transparent;
-    }
-
-    .tab-btn.active {
-        color: #0ea5a3;
-        border-bottom-color: #0ea5a3;
-    }
-
-    .tab-content {
-        display: none;
-        animation: fadeIn 0.4s ease;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 25px;
-        margin-bottom: 40px;
-    }
-
-    .stat-card {
+        border-radius: 1rem;
         background: white;
-        border-radius: 20px;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.05);
-        padding: 30px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
     }
 
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 18px rgba(0,0,0,0.07);
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
 
-    .stat-icon {
-        font-size: 2.6rem;
-        margin-bottom: 10px;
-    }
-
-    .stat-title {
-        color: #64748b;
-        font-size: 0.95rem;
-        margin-bottom: 5px;
-    }
-
-    .stat-value {
+    .metric-icon {
         font-size: 2rem;
+        color: #37b24d;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .metric-value {
+        font-size: 1.8rem;
         font-weight: 700;
-        color: #1e293b;
+        color: #2f9e44;
     }
 
-    .charts-grid {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
-        gap: 25px;
-        margin-bottom: 35px;
-    }
-
+    /* === GRÁFICOS === */
     .chart-card {
-        background: white;
-        border-radius: 16px;
-        padding: 25px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-
-    .recent-activity {
-        background: white;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.05);
-    }
-
-    .activity-item {
-        border-bottom: 1px solid #e2e8f0;
-        padding: 12px 0;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .activity-item:last-child { border-bottom: none; }
-
-    .btn-primary {
-        background-color: #0ea5a3;
         border: none;
-        border-radius: 10px;
-        padding: 12px 24px;
-        font-weight: 600;
-        transition: 0.2s;
+        border-radius: 1rem;
+        background: white;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
     }
 
-    .btn-primary:hover {
-        background-color: #0c9694;
+    .chart-card:hover {
+        transform: translateY(-4px);
     }
 
-    @media (max-width: 992px) {
-        .charts-grid { grid-template-columns: 1fr; }
+    .chart-container {
+        position: relative;
+        height: 330px;
+        width: 100%;
+    }
+
+    /* === TABLA === */
+    .table-card {
+        border-radius: 1rem;
+        background: white;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .table thead {
+        background-color: #37b24d;
+        color: white;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f1f3f5;
+    }
+
+    .table th, .table td {
+        vertical-align: middle;
     }
 </style>
 
-<div class="dashboard-container">
-
-    {{-- Tabs --}}
-    <div class="tab-buttons">
-        <button class="tab-btn active" data-tab="tab1">📊 Estadísticas Generales</button>
-        <button class="tab-btn" data-tab="tab2">🕒 Actividad Reciente</button>
+<div class="container py-5">
+    <div class="dashboard-header mb-5">
+        <h2><i class="bi bi-bar-chart"></i> Panel de Métricas Generales</h2>
+        <p class="mb-0">Visualiza el comportamiento general de los webinars, inscripciones y participación.</p>
     </div>
 
-    {{-- TAB 1 - ESTADÍSTICAS --}}
-    <div id="tab1" class="tab-content active">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon text-primary"><i class="bi bi-camera-video"></i></div>
-                <div class="stat-title">Webinars Totales</div>
-                <div class="stat-value">{{ $totalWebinars }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-info"><i class="bi bi-broadcast"></i></div>
-                <div class="stat-title">Webinars Activos</div>
-                <div class="stat-value">{{ $activeWebinars }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-warning"><i class="bi bi-stopwatch"></i></div>
-                <div class="stat-title">Webinars Finalizados</div>
-                <div class="stat-value">{{ $inactiveWebinars ?? 0 }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-success"><i class="bi bi-people"></i></div>
-                <div class="stat-title">Usuarios Registrados</div>
-                <div class="stat-value">{{ $totalUsers }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-purple"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-title">Total Inscripciones</div>
-                <div class="stat-value">{{ $totalInscripciones }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-yellow"><i class="bi bi-graph-up"></i></div>
-                <div class="stat-title">Promedio Asistentes / Webinar</div>
-                <div class="stat-value">{{ number_format($promedioAsistentes, 1) }}</div>
+    <!-- === TARJETAS === -->
+    <div class="row g-4 mb-5 text-center">
+        <div class="col-md-3 col-6">
+            <div class="metric-card p-3">
+                <i class="bi bi-person-circle metric-icon"></i>
+                <div class="metric-label mt-2">Usuarios</div>
+                <div class="metric-value">{{ $totalUsers }}</div>
             </div>
         </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h5>📈 Tendencia de creación de webinars</h5>
-                <canvas id="lineChart"></canvas>
+        <div class="col-md-3 col-6">
+            <div class="metric-card p-3">
+                <i class="bi bi-journal-check metric-icon"></i>
+                <div class="metric-label mt-2">Inscripciones</div>
+                <div class="metric-value">{{ $totalInscripciones }}</div>
             </div>
-            <div class="chart-card">
-                <h5>🥧 Estado actual de webinars</h5>
-                <canvas id="pieChart"></canvas>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="metric-card p-3">
+                <i class="bi bi-easel2 metric-icon"></i>
+                <div class="metric-label mt-2">Webinars</div>
+                <div class="metric-value">{{ $totalWebinars }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="metric-card p-3">
+                <i class="bi bi-people-fill metric-icon"></i>
+                <div class="metric-label mt-2">Promedio Asistentes</div>
+                <div class="metric-value">{{ number_format($promedioAsistentes, 1) }}</div>
             </div>
         </div>
     </div>
 
-    {{-- TAB 2 - ACTIVIDAD RECIENTE --}}
-    <div id="tab2" class="tab-content">
-        <div class="recent-activity">
-            <h5>🎥 Últimos Webinars</h5>
-            @forelse ($ultimosWebinars as $webinar)
-                <div class="activity-item">
-                    <span><strong>{{ $webinar->titulo }}</strong></span>
-                    <span>{{ $webinar->fecha ? \Carbon\Carbon::parse($webinar->fecha)->diffForHumans() : 'Sin fecha' }}</span>
-                </div>
-            @empty
-                <p class="text-muted">No hay webinars recientes.</p>
-            @endforelse
-
-            <h5 class="mt-4">👤 Nuevos Usuarios</h5>
-            @forelse ($ultimosUsuarios as $user)
-                <div class="activity-item">
-                    <span><strong>{{ $user->name }}</strong></span>
-                    <span>{{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->diffForHumans() : 'Sin fecha' }}</span>
-                </div>
-            @empty
-                <p class="text-muted">No hay usuarios nuevos.</p>
-            @endforelse
-
-            <div class="text-center mt-4">
-                <a href="{{ route('admin.webinars.index') }}" class="btn btn-primary">
-                    📅 Gestionar Webinars
-                </a>
+    <!-- === GRÁFICOS === -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-gender-ambiguous"></i> Distribución por Sexo</h6>
+                <div class="chart-container"><canvas id="chartSexo"></canvas></div>
             </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-person-lines-fill"></i> Grupo Poblacional</h6>
+                <div class="chart-container"><canvas id="chartGrupo"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-globe-americas"></i> Distribución por Etnia</h6>
+                <div class="chart-container"><canvas id="chartEtnia"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="chart-card">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-bar-chart-line"></i> Rango de Edad</h6>
+                <div class="chart-container"><canvas id="chartEdad"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="chart-card">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-calendar-event"></i> Tendencia Mensual de Inscripciones</h6>
+                <div class="chart-container"><canvas id="chartTendencia"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === TABLA DE RESUMEN === -->
+    <div class="table-card">
+        <h5 class="fw-bold text-success mb-3"><i class="bi bi-table"></i> Resumen de Webinars</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Título</th>
+                        <th>Inscritos</th>
+                        <th>Participantes</th>
+                        <th>% Participación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($tablaWebinars as $w)
+                    <tr>
+                        <td>{{ $w->fecha_formateada }}</td>
+                        <td>{{ $w->titulo }}</td>
+                        <td>{{ $w->inscripciones_count }}</td>
+                        <td>{{ $w->total_participantes }}</td>
+                        <td><span class="badge bg-success">{{ $w->porcentaje }}%</span></td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
-    // Tabs
-    const buttons = document.querySelectorAll('.tab-btn');
-    const contents = document.querySelectorAll('.tab-content');
+Chart.register(ChartDataLabels);
 
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            buttons.forEach(b => b.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
-        });
-    });
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { position: 'bottom' },
+        datalabels: {
+            color: '#fff',
+            font: { weight: 'bold' },
+            formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                let percentage = ((value / sum) * 100).toFixed(1) + "%";
+                return percentage;
+            }
+        }
+    }
+};
 
-    // Chart.js
-    new Chart(document.getElementById('lineChart'), {
-        type: 'bar',
-        data: {
-            labels: @json($labels),
-            datasets: [{
-                label: 'Webinars Creados',
-                data: @json($data),
-                backgroundColor: 'rgba(14,165,163,0.3)',
-                borderColor: '#0ea5a3',
-                borderWidth: 2,
-                borderRadius: 8
-            }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
-    });
+// === GRÁFICOS ===
+new Chart(document.getElementById('chartSexo'), {
+    type: 'doughnut',
+    data: {
+        labels: @json(array_keys($porSexo->toArray())),
+        datasets: [{ data: @json(array_values($porSexo->toArray())), backgroundColor: ['#51cf66', '#339af0', '#fcc419'] }]
+    },
+    options: chartOptions,
+    plugins: [ChartDataLabels]
+});
 
-    new Chart(document.getElementById('pieChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Activos', 'Próximos', 'Finalizados'],
-            datasets: [{
-                data: [{{ $activeWebinars }}, {{ $proximosWebinars }}, {{ $inactiveWebinars ?? 0 }}],
-                backgroundColor: ['#3b82f6', '#10b981', '#f97316'],
-                hoverOffset: 10
-            }]
-        },
-        options: { plugins: { legend: { position: 'bottom' }, tooltip: { enabled: true } } }
-    });
+new Chart(document.getElementById('chartGrupo'), {
+    type: 'bar',
+    data: {
+        labels: @json(array_keys($porGrupo->toArray())),
+        datasets: [{ label: 'Cantidad', data: @json(array_values($porGrupo->toArray())), backgroundColor: '#37b24d' }]
+    },
+    options: { ...chartOptions, plugins: { datalabels: false }, scales: { x: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('chartEtnia'), {
+    type: 'bar',
+    data: {
+        labels: @json(array_keys($porEtnia->toArray())),
+        datasets: [{ label: 'Cantidad', data: @json(array_values($porEtnia->toArray())), backgroundColor: '#74c69d' }]
+    },
+    options: { ...chartOptions, plugins: { datalabels: false } }
+});
+
+new Chart(document.getElementById('chartEdad'), {
+    type: 'bar',
+    data: {
+        labels: @json(array_keys($porEdad->toArray())),
+        datasets: [{ label: 'Participantes', data: @json(array_values($porEdad->toArray())), backgroundColor: '#69db7c' }]
+    },
+    options: { ...chartOptions, plugins: { datalabels: false }, scales: { x: { beginAtZero: true }, y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('chartTendencia'), {
+    type: 'line',
+    data: {
+        labels: @json($meses),
+        datasets: [{
+            label: 'Inscripciones',
+            data: @json($totalesMes),
+            borderColor: '#2b8a3e',
+            backgroundColor: 'rgba(55,178,77,0.15)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 5
+        }]
+    },
+    options: { ...chartOptions, plugins: { datalabels: false } }
+});
 </script>
 @endsection

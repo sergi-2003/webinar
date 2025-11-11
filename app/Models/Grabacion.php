@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,16 +8,20 @@ class Grabacion extends Model
 {
     use HasFactory;
 
-    protected $table = 'grabaciones';
+        protected $table = 'grabaciones';
+        
 
     protected $fillable = [
-        'webinar_id',
         'titulo',
+        'descripcion',
         'video_url',
+        'miniatura',
+        'fecha_publicacion',
+        'usuario_id',
     ];
 
-    public function webinar()
+    public function usuario()
     {
-        return $this->belongsTo(Webinar::class, 'webinar_id');
+        return $this->belongsTo(User::class);
     }
 }

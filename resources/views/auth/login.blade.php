@@ -77,7 +77,7 @@
         border-radius: 25px;
         padding: 4rem 3rem;
         width: 100%;
-        max-width: 850px; /* 👈 mucho más grande */
+        max-width: 850px;
         box-shadow: 0 10px 40px rgba(0,0,0,0.15);
         display: flex;
         gap: 3rem;
@@ -90,7 +90,7 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ======== LADO IZQUIERDO (IMAGEN / DECORACIÓN) ======== */
+    /* ======== LADO IZQUIERDO ======== */
     .login-image {
         flex: 1;
         display: flex;
@@ -142,7 +142,7 @@
     input:focus {
         border-color: rgb(7, 137, 48);
         outline: none;
-        box-shadow: 0 0 12px rgba(99,102,241,0.3);
+        box-shadow: 0 0 12px rgba(7,137,48,0.3);
         transform: scale(1.02);
     }
 
@@ -164,28 +164,43 @@
         margin-top: 1rem;
         transition: all 0.3s ease;
         font-size: 1.1rem;
-        background-color:rgb(7, 137, 48);
+        background-color: rgb(7, 137, 48);
     }
 
     .btn-primary:hover {
-        background: rgb(7, 137, 48);
+        background: #066a30;
         transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(99,102,241,0.45);
+        box-shadow: 0 10px 25px rgba(7,137,48,0.45);
     }
 
     .btn-primary:active {
         transform: translateY(0);
     }
 
+    /* ======== ENLACE OLVIDASTE CONTRASEÑA ======== */
+    .forgot-password {
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .forgot-password a {
+        color: rgb(7, 137, 48);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+
+    .forgot-password a:hover {
+        color: #066a30;
+        text-decoration: underline;
+    }
+
     /* ======== FOOTER ======== */
     footer {
-        background:
-        backdrop-filter: blur(10px);
         text-align: center;
         padding: 1rem;
         font-size: 0.9rem;
         color: white;
-        font-size:20px;
         box-shadow: 0 -3px 12px rgba(0,0,0,0.08);
         margin-top: auto;
     }
@@ -238,10 +253,14 @@
 
                 <!-- Botón -->
                 <button type="submit" class="btn-primary">Iniciar sesión</button>
+
+                <!-- Olvidaste tu contraseña -->
+                <div class="forgot-password">
+                    <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
+                </div>
             </form>
         </div>
     </div>
 </div>
-
 
 @endsection

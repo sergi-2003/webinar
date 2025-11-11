@@ -9,10 +9,11 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up()
+  public function up()
 {
-    Schema::table('webinars', function (Blueprint $table) {
-        $table->dateTime('hora_fin')->nullable();
+    Schema::table('usuarios', function (Blueprint $table) {
+        $table->string('telefono')->nullable();
+        $table->string('avatar')->nullable();
     });
 }
 
@@ -22,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('webinars', function (Blueprint $table) {
+        Schema::table('usuarios', function (Blueprint $table) {
             //
         });
     }

@@ -1,0 +1,180 @@
+/* ===============================================
+   PLANTILLA PERSONALIZADA - RESET PASSWORD
+   Diseño moderno con color primario verde (#10b981)
+   Compatible con Gmail, Outlook, Yahoo y móviles
+   =============================================== */
+
+/* === RESETEO BÁSICO === */
+body,
+body *:not(html):not(style):not(br):not(tr):not(code) {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    position: relative;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8fafc;
+    color: #333;
+    width: 100% !important;
+    line-height: 1.5;
+}
+
+/* === TEXTO GENERAL === */
+p, ul, ol, blockquote {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 15px 0;
+    color: #374151;
+}
+
+a {
+    color: #10b981;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #0d9468;
+}
+
+/* === ENCABEZADOS === */
+h1, h2, h3 {
+    color: #111827;
+    margin-top: 0;
+    text-align: center;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #10b981;
+}
+
+h3 {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* === ESTRUCTURA === */
+.wrapper {
+    width: 100%;
+    background: linear-gradient(180deg, #e6fff3 0%, #ffffff 100%);
+    padding: 40px 0;
+}
+
+.content {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* === CONTENEDOR INTERNO === */
+.inner-body {
+    background-color: #ffffff;
+    border-radius: 16px;
+    margin: 0 auto;
+    padding: 40px;
+    max-width: 600px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+/* === HEADER (LOGO O NOMBRE DE LA APP) === */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header a {
+    color: #10b981;
+    font-size: 24px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* === BOTONES === */
+.action {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.button {
+    background-color: #10b981;
+    color: #ffffff !important;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    display: inline-block;
+    transition: all 0.3s ease;
+    text-decoration: none !important;
+}
+
+.button:hover {
+    background-color: #0d9468;
+    transform: translateY(-2px);
+}
+
+/* === PANEL INFORMATIVO (opcional) === */
+.panel {
+    background-color: #f1fdf7;
+    border-left: 5px solid #10b981;
+    padding: 16px 20px;
+    margin: 25px 0;
+    border-radius: 8px;
+}
+
+.panel p {
+    color: #065f46;
+    margin: 0;
+}
+
+/* === FOOTER === */
+.footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.footer a {
+    color: #10b981;
+    text-decoration: underline;
+}
+
+.footer p {
+    margin: 4px 0;
+}
+
+/* === SUBCOPY (Texto pequeño bajo el botón) === */
+.subcopy {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 30px;
+    padding-top: 15px;
+    font-size: 14px;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* === IMÁGENES === */
+img {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+/* === RESPONSIVE === */
+@media only screen and (max-width: 600px) {
+    .inner-body {
+        width: 90% !important;
+        padding: 24px !important;
+    }
+
+    .button {
+        width: 100% !important;
+    }
+}
